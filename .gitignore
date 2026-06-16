@@ -1,0 +1,18 @@
+.next
+node_modules
+out
+dist
+.env
+.env.local
+.vercel
+*.log
+.DS_Store
+*.tsbuildinfo
+
+# This repository is only for the deployable Agendier launch site.
+# Keep local prototypes, generated files, and Codex work out of GitHub.
+/*
+!/.gitignore
+!/agendier-launch/
+!/agendier-launch/**
+agendier-launch/.DS_Store
