@@ -15,5 +15,15 @@ create unique index if not exists waitlist_subscribers_email_unique
 
 alter table public.waitlist_subscribers enable row level security;
 
+grant insert on public.waitlist_subscribers to anon, authenticated;
+
+drop policy if exists "Allow public waitlist inserts" on public.waitlist_subscribers;
+
+create policy "Allow public waitlist inserts"
+  on public.waitlist_subscribers
+  for insert
+  to anon, authenticated
+  with check (true);
+
 comment on table public.waitlist_subscribers is
   'Private Agendier launch site waitlist submissions inserted by the Vercel API function.';

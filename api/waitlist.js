@@ -62,6 +62,23 @@ function getSupabaseConfig() {
   };
 }
 
+function getSupabaseHeaders(secretKey) {
+  const headers = {
+    apikey: secretKey,
+    "Content-Type": "application/json",
+    Prefer: "return=minimal"
+  };
+
+  // New Supabase sb_publishable_/sb_secret_ keys are not JWTs, so they must not
+  // be sent as "Authorization: Bearer ...". Legacy anon/service_role keys are
+  // JWTs and still use the Authorization header.
+  if (!secretKey.startsWith("sb_")) {
+    headers.Authorization = `Bearer ${secretKey}`;
+  }
+
+  return headers;
+}
+
 module.exports = async function waitlistHandler(request, response) {
   if (request.method !== "POST") {
     response.setHeader("Allow", "POST");
@@ -113,12 +130,7 @@ module.exports = async function waitlistHandler(request, response) {
     `${supabase.url}/rest/v1/waitlist_subscribers`,
     {
       method: "POST",
-      headers: {
-        apikey: supabase.secretKey,
-        Authorization: `Bearer ${supabase.secretKey}`,
-        "Content-Type": "application/json",
-        Prefer: "return=minimal"
-      },
+      headers: getSupabaseHeaders(supabase.secretKey),
       body: JSON.stringify({
         full_name: fullName,
         email,
