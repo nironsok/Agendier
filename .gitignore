@@ -15,7 +15,10 @@ dist
 !/.gitignore
 !/.env.example
 !/DEPLOYMENT.md
+!/apple-touch-icon.png
 !/agendier-demo.html
+!/favicon.ico
+!/favicon.png
 !/index.html
 !/api/
 !/api/**
