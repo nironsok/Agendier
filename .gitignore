@@ -13,6 +13,11 @@ dist
 # Keep local prototypes, generated files, and Codex work out of GitHub.
 /*
 !/.gitignore
-!/agendier-launch/
-!/agendier-launch/**
-agendier-launch/.DS_Store
+!/.env.example
+!/DEPLOYMENT.md
+!/agendier-demo.html
+!/index.html
+!/api/
+!/api/**
+!/supabase/
+!/supabase/**
