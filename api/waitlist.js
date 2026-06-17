@@ -1,5 +1,8 @@
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phonePattern = /^\+?[\d\s().-]{7,18}$/;
+const defaultSupabaseUrl = "https://zenqwdakeepbpqevfnuq.supabase.co";
+const defaultSupabasePublishableKey =
+  "sb_publishable_uOpNHbEq-09-QNI61tw9Yg_kizOpM6N";
 
 function sendJson(response, statusCode, payload) {
   response.statusCode = statusCode;
@@ -48,23 +51,35 @@ function cleanInterests(value) {
 }
 
 function getSupabaseConfig() {
-  const url = process.env.SUPABASE_URL;
-  const secretKey =
-    process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const url = (process.env.SUPABASE_URL || defaultSupabaseUrl).replace(
+    /\/$/,
+    ""
+  );
+  const publishableKey =
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const defaultKey =
+    url === defaultSupabaseUrl ? defaultSupabasePublishableKey : "";
+  const apiKey =
+    publishableKey ||
+    defaultKey ||
+    process.env.SUPABASE_SECRET_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!url || !secretKey) {
+  if (!url || !apiKey) {
     return null;
   }
 
   return {
-    url: url.replace(/\/$/, ""),
-    secretKey
+    url,
+    apiKey
   };
 }
 
-function getSupabaseHeaders(secretKey) {
+function getSupabaseHeaders(apiKey) {
   const headers = {
-    apikey: secretKey,
+    apikey: apiKey,
     "Content-Type": "application/json",
     Prefer: "return=minimal"
   };
@@ -72,8 +87,8 @@ function getSupabaseHeaders(secretKey) {
   // New Supabase sb_publishable_/sb_secret_ keys are not JWTs, so they must not
   // be sent as "Authorization: Bearer ...". Legacy anon/service_role keys are
   // JWTs and still use the Authorization header.
-  if (!secretKey.startsWith("sb_")) {
-    headers.Authorization = `Bearer ${secretKey}`;
+  if (!apiKey.startsWith("sb_")) {
+    headers.Authorization = `Bearer ${apiKey}`;
   }
 
   return headers;
@@ -130,7 +145,7 @@ module.exports = async function waitlistHandler(request, response) {
     `${supabase.url}/rest/v1/waitlist_subscribers`,
     {
       method: "POST",
-      headers: getSupabaseHeaders(supabase.secretKey),
+      headers: getSupabaseHeaders(supabase.apiKey),
       body: JSON.stringify({
         full_name: fullName,
         email,

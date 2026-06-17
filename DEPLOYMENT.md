@@ -1,6 +1,6 @@
 # Agendier Launch Deployment
 
-This folder contains the exact static site currently served from
+This repository contains the exact static site initially served from
 `http://localhost:5185/`, plus a Vercel API function at `/api/waitlist`.
 
 ## 1. Supabase
@@ -8,15 +8,15 @@ This folder contains the exact static site currently served from
 1. Create a Supabase project.
 2. Open SQL Editor.
 3. Run `supabase/waitlist.sql`.
-4. Copy your Project URL and server-only key:
-   - New projects: `sb_secret_...`
-   - Legacy projects: `service_role`
+4. Copy your Project URL and publishable or anon key:
+   - New projects: `sb_publishable_...`
+   - Legacy projects: `anon`
 
-For local testing, create `agendier-launch/.env.local`:
+For local testing, create `.env.local`:
 
 ```bash
 SUPABASE_URL=https://your-project-ref.supabase.co
-SUPABASE_SECRET_KEY=sb_secret_your_server_only_key
+SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_public_insert_key
 ```
 
 Never commit `.env.local`.
@@ -41,12 +41,12 @@ git push -u origin main
 ## 3. Vercel
 
 1. Import the GitHub repository.
-2. Set Root Directory to `agendier-launch`.
+2. Leave Root Directory unset.
 3. Leave Build Command empty.
 4. Leave Output Directory empty.
-5. Add environment variables for Production, Preview, and Development:
+5. Optional: add environment variables for Production, Preview, and Development:
    - `SUPABASE_URL`
-   - `SUPABASE_SECRET_KEY` or `SUPABASE_SERVICE_ROLE_KEY`
+   - `SUPABASE_PUBLISHABLE_KEY` or `SUPABASE_ANON_KEY`
 6. Deploy.
 
 After deployment, submit the live waitlist form and confirm a row appears in
