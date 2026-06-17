@@ -3037,7 +3037,34 @@ h1,h2,h3{ font-family: var(--font-head); line-height: 1.18; }
   var reelFrame = document.getElementById("reelFrame");
   if(reelFrame){
     var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    var compactHeroTour = window.matchMedia("(max-width: 760px)").matches;
+    var lastUserScrollSignal = 0;
+    function noteUserScrollIntent(){ lastUserScrollSignal = Date.now(); }
+    ["touchstart", "touchmove", "wheel", "keydown", "pointerdown"].forEach(function(type){
+      window.addEventListener(type, noteUserScrollIntent, { passive: true });
+    });
+    window.addEventListener("scroll", function(){
+      if(Date.now() - lastUserScrollSignal < 1200) noteUserScrollIntent();
+    }, { passive: true });
+
+    function currentPageScroll(){
+      return { x: window.pageXOffset || document.documentElement.scrollLeft || 0, y: window.pageYOffset || document.documentElement.scrollTop || 0 };
+    }
+    function restorePageScroll(pos){
+      if(!pos || Date.now() - lastUserScrollSignal < 700) return;
+      if(Math.abs((window.pageYOffset || 0) - pos.y) > 1 || Math.abs((window.pageXOffset || 0) - pos.x) > 1){
+        window.scrollTo(pos.x, pos.y);
+      }
+    }
+    function holdPageScroll(pos, duration){
+      restorePageScroll(pos);
+      requestAnimationFrame(function(){ restorePageScroll(pos); });
+      if(!duration) return;
+      var until = Date.now() + duration;
+      var timer = setInterval(function(){
+        if(Date.now() > until){ clearInterval(timer); return; }
+        restorePageScroll(pos);
+      }, 120);
+    }
 
     function setupHeroTour(){
       var idoc, iwin;
@@ -3046,6 +3073,8 @@ h1,h2,h3{ font-family: var(--font-head); line-height: 1.18; }
       try { if(iwin.location.href === "about:blank") return; } catch(e){}
       if(idoc.body.getAttribute("data-agendier-tour-ready") === "true") return;
       idoc.body.setAttribute("data-agendier-tour-ready", "true");
+      var setupPagePos = currentPageScroll();
+      holdPageScroll(setupPagePos, 2600);
 
       function syncTheme(){
         try { idoc.documentElement.classList.toggle("dark", document.documentElement.classList.contains("dark")); } catch(e){}
@@ -3055,10 +3084,9 @@ h1,h2,h3{ font-family: var(--font-head); line-height: 1.18; }
         b.addEventListener("click", function(){ setTimeout(syncTheme, 40); });
       });
 
-      if(compactHeroTour) return;
-
       var st = idoc.createElement("style");
       st.textContent = [
+        "html, body{ overscroll-behavior: contain !important; }",
         ".demo-window{ grid-template-columns: 168px minmax(0,1fr) !important; }",
         ".demo-side{ padding: 12px 7px !important; align-items: stretch !important; scrollbar-width: none !important; -ms-overflow-style: none !important; }",
         ".demo-side::-webkit-scrollbar{ width: 0 !important; height: 0 !important; display: none !important; }",
@@ -3070,6 +3098,7 @@ h1,h2,h3{ font-family: var(--font-head); line-height: 1.18; }
         ".demo-topbar{ padding: 12px 16px !important; }",
         ".demo-topbar h2{ font-size: 15px !important; }",
         ".demo-topbar p{ font-size: 10.5px !important; }",
+        ".demo-body, .demo-nav-scroll{ overscroll-behavior: contain !important; }",
         ".demo-grid-2{ grid-template-columns: 1fr !important; }",
         ".demo-stats{ grid-template-columns: repeat(2,1fr) !important; }",
         "@media (max-width: 470px){ .demo-window{ grid-template-columns: 46px minmax(0,1fr) !important; } .demo-side{ align-items: center !important; gap: 2px !important; padding: 10px 4px !important; } .demo-side .demo-nav-item{ justify-content: center !important; gap: 0 !important; padding: 9px 0 !important; } .demo-side .demo-nav-item .nav-label, .demo-side .demo-nav-item .pro-badge, .demo-side .nav-group{ display: none !important; } .demo-side .demo-nav-item svg{ width: 18px !important; height: 18px !important; } .demo-stats{ grid-template-columns: 1fr !important; } }",
@@ -3092,10 +3121,12 @@ h1,h2,h3{ font-family: var(--font-head); line-height: 1.18; }
       function wait(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
       function doRipple(el){
         if(!el) return;
+        var pagePos = currentPageScroll();
         var r = el.getBoundingClientRect();
         ring.style.left = (r.left + r.width/2 - 8) + "px";
         ring.style.top = (r.top + r.height/2 - 8) + "px";
         ring.classList.remove("go"); void ring.offsetWidth; ring.classList.add("go");
+        holdPageScroll(pagePos, 220);
       }
       async function tap(sel, scoped){
         var root = scoped ? (idoc.querySelector(".demo-view.active") || idoc) : idoc;
@@ -3104,7 +3135,9 @@ h1,h2,h3{ font-family: var(--font-head); line-height: 1.18; }
         await wait(reduceMotion ? 0 : 460);
         if(!reduceMotion) doRipple(el);
         await wait(130);
+        var pagePos = currentPageScroll();
         el.click();
+        holdPageScroll(pagePos, 500);
         return true;
       }
       async function autoScroll(){
@@ -3113,24 +3146,32 @@ h1,h2,h3{ font-family: var(--font-head); line-height: 1.18; }
         if(!body) return;
         var over = body.scrollHeight - body.clientHeight;
         if(over > 24){
+          var pagePos = currentPageScroll();
           body.scrollTo({ top: over, behavior: "smooth" });
+          holdPageScroll(pagePos, Math.min(3200, 1000 + over*3.5));
           await wait(Math.min(3200, 1000 + over*3.5));
+          pagePos = currentPageScroll();
           body.scrollTo({ top: 0, behavior: "smooth" });
+          holdPageScroll(pagePos, 900);
           await wait(850);
         }
       }
       async function gotoView(v){
         var nav = idoc.querySelector('.demo-nav-item[data-view="'+v+'"]');
         if(nav){
+          var pagePos = currentPageScroll();
           var rail = nav.closest(".demo-nav-scroll");
           if(rail){
             var top = nav.offsetTop - rail.offsetTop - (rail.clientHeight - nav.offsetHeight) / 2;
             rail.scrollTop = Math.max(0, Math.min(top, rail.scrollHeight - rail.clientHeight));
           }
+          holdPageScroll(pagePos, 260);
           await wait(120);
           await tap('.demo-nav-item[data-view="'+v+'"]');
         } else if(iwin.__agendierShowView){
+          var directPagePos = currentPageScroll();
           iwin.__agendierShowView(v);
+          holdPageScroll(directPagePos, 500);
         }
         await wait(440);
       }
@@ -3149,13 +3190,13 @@ h1,h2,h3{ font-family: var(--font-head); line-height: 1.18; }
           await tap('[data-pomo-preset="1"]'); await wait(800);
           await tap('[data-pomo-preset="0"]'); await wait(650);
           var pbody = idoc.querySelector('.demo-body');
-          if(pbody){ pbody.scrollTo({ top: pbody.scrollHeight, behavior: "smooth" }); await wait(950); }
+          if(pbody){ var pomoPagePos = currentPageScroll(); pbody.scrollTo({ top: pbody.scrollHeight, behavior: "smooth" }); holdPageScroll(pomoPagePos, 1000); await wait(950); }
           await tap('#pomoToggle'); await wait(2700);
           await tap('#pomoReset'); await wait(700);
         },
         ai: async function(){
           await tap('#aiSuggest button'); await wait(2500);
-          var log = idoc.querySelector('#aiLog'); if(log) log.scrollTo({ top: log.scrollHeight, behavior: "smooth" });
+          var log = idoc.querySelector('#aiLog'); if(log){ var aiPagePos = currentPageScroll(); log.scrollTo({ top: log.scrollHeight, behavior: "smooth" }); holdPageScroll(aiPagePos, 1000); }
           await wait(950);
         },
         wellness: async function(){
@@ -3179,6 +3220,7 @@ h1,h2,h3{ font-family: var(--font-head); line-height: 1.18; }
         await wait(1200);
       }
       async function loop(){
+        holdPageScroll(setupPagePos, 1600);
         await wait(500);
         var i = 0;
         while(true){
