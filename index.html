@@ -3033,10 +3033,15 @@ h1,h2,h3{ font-family: var(--font-head); line-height: 1.18; }
   var reelFrame = document.getElementById("reelFrame");
   if(reelFrame){
     var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    reelFrame.addEventListener("load", function(){
+    var compactHeroTour = window.matchMedia("(max-width: 760px)").matches;
+
+    function setupHeroTour(){
       var idoc, iwin;
       try { idoc = reelFrame.contentDocument; iwin = reelFrame.contentWindow; } catch(e){ return; }
       if(!idoc || !idoc.body) return;
+      try { if(iwin.location.href === "about:blank") return; } catch(e){}
+      if(idoc.body.getAttribute("data-agendier-tour-ready") === "true") return;
+      idoc.body.setAttribute("data-agendier-tour-ready", "true");
 
       function syncTheme(){
         try { idoc.documentElement.classList.toggle("dark", document.documentElement.classList.contains("dark")); } catch(e){}
@@ -3045,6 +3050,8 @@ h1,h2,h3{ font-family: var(--font-head); line-height: 1.18; }
       document.querySelectorAll("[data-theme-toggle]").forEach(function(b){
         b.addEventListener("click", function(){ setTimeout(syncTheme, 40); });
       });
+
+      if(compactHeroTour) return;
 
       var st = idoc.createElement("style");
       st.textContent = [
@@ -3111,7 +3118,11 @@ h1,h2,h3{ font-family: var(--font-head); line-height: 1.18; }
       async function gotoView(v){
         var nav = idoc.querySelector('.demo-nav-item[data-view="'+v+'"]');
         if(nav){
-          nav.scrollIntoView({ block: "nearest" });
+          var rail = nav.closest(".demo-nav-scroll");
+          if(rail){
+            var top = nav.offsetTop - rail.offsetTop - (rail.clientHeight - nav.offsetHeight) / 2;
+            rail.scrollTop = Math.max(0, Math.min(top, rail.scrollHeight - rail.clientHeight));
+          }
           await wait(120);
           await tap('.demo-nav-item[data-view="'+v+'"]');
         } else if(iwin.__agendierShowView){
@@ -3172,7 +3183,12 @@ h1,h2,h3{ font-family: var(--font-head); line-height: 1.18; }
         }
       }
       loop();
-    });
+    }
+
+    reelFrame.addEventListener("load", setupHeroTour);
+    try {
+      if(reelFrame.contentDocument && reelFrame.contentDocument.readyState === "complete") setupHeroTour();
+    } catch(e){}
   }
 
   /* "Watch Demo" buttons just scroll to the looping hero tour — no interactive access. */
