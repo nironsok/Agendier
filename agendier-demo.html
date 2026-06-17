@@ -159,6 +159,10 @@ h1,h2,h3{ font-family: var(--font-head); line-height: 1.18; }
 .aurora:hover::before{ opacity: 1; animation-duration: 2.2s; }
 @keyframes aurora-rotate{ from{ transform: rotate(0deg); } to{ transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce){ .aurora::before{ animation: none; } }
+@media (max-width: 760px), (hover: none){
+  .aurora{ clip-path: inset(0 round 999px); -webkit-mask-image: -webkit-radial-gradient(white, black); }
+  .aurora::before{ display: none; }
+}
 
 /* Shine border (ported from ShineBorder) — waitlist form card.
    An animated shine travels around the card's border ring only — masked to
